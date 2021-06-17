@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+
+
+<html>
+<head>
+        <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=0" />
+    <meta name="format-detection" content="telephone=no" />
+
+
+
+    <title>施設予約</title>
+    <link rel="stylesheet" type="text/css" href="/ACESPORTSWebUser/Content/themes/base/jquery-ui.css" />
+    <link rel="stylesheet" type="text/css" href="/ACESPORTSWebUser/Content/jquery.mobile-1.2.0.min.css" />
+    <link rel="stylesheet" type="text/css" href="/ACESPORTSWebUser/Content/atoms.theme.min.css" />
+    <link rel="stylesheet" type="text/css" href="/ACESPORTSWebUser/Content/Atoms.css" />
+    
+    <script src="/ACESPORTSWebUser/Scripts/jquery-1.7.2.min.js" type="text/javascript"></script>
+    <script type="text/javascript">
+    //<![CDATA[
+        $(document).bind("mobileinit", function () {
+            $.mobile.ajaxEnabled = false;
+            $.mobile.ajaxLinksEnabled = false;
+            $.mobile.ajaxFormsEnabled = false;
+            $.mobile.pushStateEnabled = false;
+            $.mobile.page.prototype.options.keepNative = "body,textarea,button,input.text-box,input[type='button'],input[type='submit'],[data-role='page']";
+        });
+
+    //]]>
+    </script>
+    <script src="/ACESPORTSWebUser/Scripts/jquery-ui-1.8.20.min.js" type="text/javascript"></script>
+    <script src="/ACESPORTSWebUser/Scripts/modernizr-2.5.3.js" type="text/javascript"></script>
+    <script src="/ACESPORTSWebUser/Scripts/jquery.ui.datepicker-ja.min.js" type="text/javascript"></script>
+    <script src="/ACESPORTSWebUser/Scripts/jquery.unobtrusive-ajax.min.js" type="text/javascript"></script>
+    <script src="/ACESPORTSWebUser/Scripts/jquery.json-2.3.min.js" type="text/javascript"></script>
+    <script src="/ACESPORTSWebUser/Scripts/jQuery.tmpl.min.js" type="text/javascript"></script>
+    <script src="/ACESPORTSWebUser/Scripts/jquery.blockUI.js" type="text/javascript"></script>
+    <script src="/ACESPORTSWebUser/Scripts/jquery.mobile-1.2.0.min.js" type="text/javascript"></script>
+    <script src="/ACESPORTSWebUser/Scripts/atomscommon.js" type="text/javascript"></script>
+    <script type="text/javascript">
+    //<![CDATA[
+        function bl() {
+            if(0){
+                /* 待機中の画像を出すロジック */
+                return $.blockUI({ 
+                message: '<div id="loading"><img width=400 src="/ACESPORTSWebUser/Content/images/loading.gif" alt="Now Loading..."></div>',
+                css: { 
+                    width: '0', 
+                    top:  ($(window).height() - 400) /2 + 'px', //400:画像の幅 中央にする為の計算
+                    left: ($(window).width() - 400) /2 + 'px',
+                    border: 'none', 
+                    padding: '0px', 
+                    backgroundColor: '#000', 
+                    '-webkit-border-radius': '0px', 
+                    '-moz-border-radius': '0px', 
+                    opacity: .6, 
+                    color: '#fff' 
+                }
+                });
+            }
+            return $.blockUI({ message: '<h1>お待ちください<br /></h1>' });
+        }
+        function bll(event) {
+            if (event.isDefaultPrevented()) { return; }
+            return bl();
+        }
+        $(function () {
+            
+            $(document).ajaxStart(bl).ajaxStop($.unblockUI);
+            //$("form").submit(bll);
+            // 読み込み後アドレスバー非表示
+            function doScroll() { if (window.pageYOffset === 0) { window.scrollTo(0, 1); } }
+            window.onload = function () { setTimeout(doScroll, 100); }
+
+            setTimeout( function() { $("form").submit(bll ); }, 1000);
+        });
+        var AddressSearchErrorMsg = '郵便番号ﾁｪｯｸ処理に失敗しました。再度、処理を行ってください。';
+        var AddressSearchNotFoundMsg = '郵便番号から住所が特定できません';
+        
+    //]]>
+    </script>
+
+    <style type="text/css">
+        .ui-grid-a-37{
+            overflow: hidden;
+        }        
+        .ui-grid-span1 
+        {
+            height:41px;
+        }
+        .ui-grid-span2 
+        {
+            height:80px;
+        }        
+        .ui-grid-span3 
+        {
+            height:119px;
+        }        
+        .ui-grid-span4 
+        {
+            height:158px;
+        }        
+        .ui-grid-a-37 .ui-block-a{
+            width: 30%;
+            text-align:center;
+            vertical-align:middle;
+        }        
+        .ui-grid-a-37 .ui-block-b{
+            width: 70%;
+        }
+        .List_Button
+        {
+            width:100%;  
+            height:39px;                                  
+            border-radius: 0;            
+        }      
+        .List_Button_Disable
+        {
+            background:#999999;
+        }             
+        .ui-controlgroup-controls .ui-btn-inner 
+        {
+            display:none;            
+        } 
+        .ui-btn-up-c
+        {
+            font-family: ArialMT,"Hiragino Kaku Gothic ProN","ヒラギノ角ゴ ProN W3",メイリオ,sans-serif;
+        } 
+        .hr30
+        {
+            color:#B9C5C0;
+            margin:0;
+        }                
+    </style>
+    <script type="text/javascript">
+    //<![CDATA[
+        $(function () {
+            $("#backsubmit").r_click(function () {
+                $('#ExecuteType').val("Back");
+                $("form#main").submit();
+                return false;
+            });
+            $("button.List_Button").each(function () {
+                $(this).click(function () {
+                    var vala = $(this).attr("data-pkey");
+                    $('#hourCd').val(vala);
+                    $('#ExecuteType').val("Next");
+                    $("form#main").submit();
+                    return false;
+                });
+            });
+            $("select#tmpoCD").change(function () {
+                $("#ExecuteType").val("ChangeCond");
+                $("form#main").trigger('submit');
+            });
+            $("select#day").change(function () {
+                $("#ExecuteType").val("ChangeCond");
+                $("form#main").trigger('submit');
+            });
+            $("select#sisetuGrpCD").change(function () {
+                $("#ExecuteType").val("ChangeCond");
+                $("form#main").trigger('submit');
+            });
+            $("select#sisetuCD").change(function () {
+                $("#ExecuteType").val("ChangeCond");
+                $("form#main").trigger('submit');
+            });
+            $("button.List_Button").buttonMarkup({corners: "false"});
+        });
+     //]]>
+    </script>
+    
+    <script src="/ACESPORTSWebUser/Scripts/jquery.validate.js" type="text/javascript"></script>
+<script src="/ACESPORTSWebUser/Scripts/jquery.validate.unobtrusive.js" type="text/javascript"></script>
+<script src="/ACESPORTSWebUser/Scripts/atomsValidate.js" type="text/javascript"></script>
+<script src="/ACESPORTSWebUser/Scripts/jquery_validate_messages_ja.js" type="text/javascript"></script>
+</head>
+<body>
+    
+    <div data-role="page" data-theme="bbb">
+        <header class="general">
+            <div data-role="title" id="provision">
+                    <a href="/ACESPORTSWebUser/">
+                        <img src="/ACESPORTSWebUser/Content/images/atomsv_logo.png" alt="ATOMS-V" />
+                    </a>
+            </div>
+            <div id="logindisplay">
+                <ul style="list-style:none; margin-top: 0px;">
+<li class="label_kaiin" style="float:left; margin: 0 auto; padding: 0 0.625em;">
+9000001249<br/>
+    高橋　和馬 様
+</li>
+<li style="float:left; margin: 0 auto; padding: 0 0.625em;"><a class="btn_conform" href="/ACESPORTSWebUser/Account/LogOff">ログアウト</a></li>
+</ul>
+
+            </div>
+
+            <h1>予約状況照会</h1>
+
+    <div class="MessageArea">
+        <div class="ca">
+            条件を指定してください。<br />
+            <div class="validation-summary-valid" data-valmsg-summary="true"><span>入力に不正な場所があります</span>
+<ul><li style="display:none"></li>
+</ul></div>
+        </div>
+    </div>
+        </header>
+        <div data-role="content" data-theme="bbb" class="ca">
+            
+<form action="/ACESPORTSWebUser/YYS/Reserve/InquiryReserve" id="main" method="post">    <dl class="Category">
+        <dt>条件</dt>
+        <dd>
+            <label>店舗</label>
+            <select id="tmpoCD" name="tmpoCD"><option selected="selected" value="001">エーススポーツプラザ市川</option>
+</select>
+            <span class="field-validation-valid" data-valmsg-for="tmpoCD" data-valmsg-replace="true"></span>
+        </dd>
+        <dd>
+            <label>日付</label>
+            <select data-val="true" data-val-number="The field day must be a number." data-val-required="day フィールドが必要です。" id="day" name="day"><option value="20210616">2021年06月16日(水)</option>
+<option selected="selected" value="20210617">2021年06月17日(木)</option>
+<option value="20210618">2021年06月18日(金)</option>
+<option value="20210619">2021年06月19日(土)</option>
+<option value="20210620">2021年06月20日(日)</option>
+<option value="20210621">2021年06月21日(月)</option>
+<option value="20210622">2021年06月22日(火)</option>
+<option value="20210623">2021年06月23日(水)</option>
+<option value="20210624">2021年06月24日(木)</option>
+<option value="20210625">2021年06月25日(金)</option>
+<option value="20210626">2021年06月26日(土)</option>
+<option value="20210627">2021年06月27日(日)</option>
+<option value="20210628">2021年06月28日(月)</option>
+<option value="20210629">2021年06月29日(火)</option>
+<option value="20210630">2021年06月30日(水)</option>
+<option value="20210701">2021年07月01日(木)</option>
+<option value="20210702">2021年07月02日(金)</option>
+<option value="20210703">2021年07月03日(土)</option>
+<option value="20210704">2021年07月04日(日)</option>
+<option value="20210705">2021年07月05日(月)</option>
+<option value="20210706">2021年07月06日(火)</option>
+<option value="20210707">2021年07月07日(水)</option>
+<option value="20210708">2021年07月08日(木)</option>
+<option value="20210709">2021年07月09日(金)</option>
+<option value="20210710">2021年07月10日(土)</option>
+<option value="20210711">2021年07月11日(日)</option>
+<option value="20210712">2021年07月12日(月)</option>
+<option value="20210713">2021年07月13日(火)</option>
+<option value="20210714">2021年07月14日(水)</option>
+<option value="20210715">2021年07月15日(木)</option>
+<option value="20210716">2021年07月16日(金)</option>
+<option value="20210717">2021年07月17日(土)</option>
+<option value="20210718">2021年07月18日(日)</option>
+<option value="20210719">2021年07月19日(月)</option>
+<option value="20210720">2021年07月20日(火)</option>
+<option value="20210721">2021年07月21日(水)</option>
+<option value="20210722">2021年07月22日(木)</option>
+<option value="20210723">2021年07月23日(金)</option>
+<option value="20210724">2021年07月24日(土)</option>
+<option value="20210725">2021年07月25日(日)</option>
+<option value="20210726">2021年07月26日(月)</option>
+<option value="20210727">2021年07月27日(火)</option>
+<option value="20210728">2021年07月28日(水)</option>
+<option value="20210729">2021年07月29日(木)</option>
+<option value="20210730">2021年07月30日(金)</option>
+<option value="20210731">2021年07月31日(土)</option>
+<option value="20210801">2021年08月01日(日)</option>
+<option value="20210802">2021年08月02日(月)</option>
+<option value="20210803">2021年08月03日(火)</option>
+<option value="20210804">2021年08月04日(水)</option>
+<option value="20210805">2021年08月05日(木)</option>
+<option value="20210806">2021年08月06日(金)</option>
+<option value="20210807">2021年08月07日(土)</option>
+<option value="20210808">2021年08月08日(日)</option>
+<option value="20210809">2021年08月09日(月)</option>
+<option value="20210810">2021年08月10日(火)</option>
+<option value="20210811">2021年08月11日(水)</option>
+<option value="20210812">2021年08月12日(木)</option>
+<option value="20210813">2021年08月13日(金)</option>
+<option value="20210814">2021年08月14日(土)</option>
+<option value="20210815">2021年08月15日(日)</option>
+</select>
+            <span class="field-validation-valid" data-valmsg-for="day" data-valmsg-replace="true"></span>
+        </dd>
+        <dd>
+            <label>施設グループ</label>
+            <select id="sisetuGrpCD" name="sisetuGrpCD"><option selected="selected" value="00001">アウトドアテニスコート</option>
+<option value="00002">インドアテニスコート</option>
+</select>
+            <span class="field-validation-valid" data-valmsg-for="sisetuGrpCD" data-valmsg-replace="true"></span>
+        </dd>
+        <dd>
+            <label>施設</label>
+            <select id="sisetuCD" name="sisetuCD"><option selected="selected" value="00001">1番コート</option>
+<option value="00002">2番コート</option>
+<option value="00003">3番コート</option>
+</select>
+            <span class="field-validation-valid" data-valmsg-for="sisetuCD" data-valmsg-replace="true"></span>
+        </dd>        
+    </dl>    
+    <div data-role="controlgroup">
+            <div class="ui-grid-a-37 ui-grid-span4" style="text-align: left;">
+                <div class="ui-block-a ui-btn-up-c ui-grid-span4">
+                    <p>
+                        <span>06:00</span>
+                    </p>
+                </div>
+                <div class="ui-block-b ui-btn-up-c">
+                    <p>
+                            <button class="List_Button " id="button_60000" data-pkey="60000" data-role="button"></button>
+                                                    <button class="List_Button " id="button_61500" data-pkey="61500" data-role="button"></button>
+                                                    <button class="List_Button " id="button_63000" data-pkey="63000" data-role="button"></button>
+                                                    <button class="List_Button " id="button_64500" data-pkey="64500" data-role="button"></button>
+                    </p>
+                </div>
+            </div>                       
+            <div class="ui-grid-a-37 ui-grid-span4" style="text-align: left;">
+                <div class="ui-block-a ui-btn-up-c ui-grid-span4">
+                    <p>
+                        <span>07:00</span>
+                    </p>
+                </div>
+                <div class="ui-block-b ui-btn-up-c">
+                    <p>
+                            <button class="List_Button " id="button_70000" data-pkey="70000" data-role="button"></button>
+                                                    <button class="List_Button " id="button_71500" data-pkey="71500" data-role="button"></button>
+                                                    <button class="List_Button " id="button_73000" data-pkey="73000" data-role="button"></button>
+                                                    <button class="List_Button " id="button_74500" data-pkey="74500" data-role="button"></button>
+                    </p>
+                </div>
+            </div>                       
+            <div class="ui-grid-a-37 ui-grid-span4" style="text-align: left;">
+                <div class="ui-block-a ui-btn-up-c ui-grid-span4">
+                    <p>
+                        <span>08:00</span>
+                    </p>
+                </div>
+                <div class="ui-block-b ui-btn-up-c">
+                    <p>
+                            <button class="List_Button " id="button_80000" data-pkey="80000" data-role="button"></button>
+                                                    <button class="List_Button " id="button_81500" data-pkey="81500" data-role="button"></button>
+                                                    <button class="List_Button " id="button_83000" data-pkey="83000" data-role="button"></button>
+                                                    <button class="List_Button " id="button_84500" data-pkey="84500" data-role="button"></button>
+                    </p>
+                </div>
+            </div>                       
+            <div class="ui-grid-a-37 ui-grid-span4" style="text-align: left;">
+                <div class="ui-block-a ui-btn-up-c ui-grid-span4">
+                    <p>
+                        <span>09:00</span>
+                    </p>
+                </div>
+                <div class="ui-block-b ui-btn-up-c">
+                    <p>
+                            <button class="List_Button List_Button_Disable" id="button_90000" data-pkey="90000" data-role="button"></button>
+                                                    <button class="List_Button List_Button_Disable" id="button_91500" data-pkey="91500" data-role="button"></button>
+                                                    <button class="List_Button List_Button_Disable" id="button_93000" data-pkey="93000" data-role="button"></button>
+                                                    <button class="List_Button List_Button_Disable" id="button_94500" data-pkey="94500" data-role="button"></button>
+                    </p>
+                </div>
+            </div>                       
+            <div class="ui-grid-a-37 ui-grid-span4" style="text-align: left;">
+                <div class="ui-block-a ui-btn-up-c ui-grid-span4">
+                    <p>
+                        <span>10:00</span>
+                    </p>
+                </div>
+                <div class="ui-block-b ui-btn-up-c">
+                    <p>
+                            <button class="List_Button " id="button_100000" data-pkey="100000" data-role="button"></button>
+                                                    <button class="List_Button " id="button_101500" data-pkey="101500" data-role="button"></button>
+                                                    <button class="List_Button " id="button_103000" data-pkey="103000" data-role="button"></button>
+                                                    <button class="List_Button " id="button_104500" data-pkey="104500" data-role="button"></button>
+                    </p>
+                </div>
+            </div>                       
+            <div class="ui-grid-a-37 ui-grid-span4" style="text-align: left;">
+                <div class="ui-block-a ui-btn-up-c ui-grid-span4">
+                    <p>
+                        <span>11:00</span>
+                    </p>
+                </div>
+                <div class="ui-block-b ui-btn-up-c">
+                    <p>
+                            <button class="List_Button " id="button_110000" data-pkey="110000" data-role="button"></button>
+                                                    <button class="List_Button " id="button_111500" data-pkey="111500" data-role="button"></button>
+                                                    <button class="List_Button " id="button_113000" data-pkey="113000" data-role="button"></button>
+                                                    <button class="List_Button " id="button_114500" data-pkey="114500" data-role="button"></button>
+                    </p>
+                </div>
+            </div>                       
+            <div class="ui-grid-a-37 ui-grid-span4" style="text-align: left;">
+                <div class="ui-block-a ui-btn-up-c ui-grid-span4">
+                    <p>
+                        <span>12:00</span>
+                    </p>
+                </div>
+                <div class="ui-block-b ui-btn-up-c">
+                    <p>
+                            <button class="List_Button " id="button_120000" data-pkey="120000" data-role="button"></button>
+                                                    <button class="List_Button " id="button_121500" data-pkey="121500" data-role="button"></button>
+                                                    <button class="List_Button " id="button_123000" data-pkey="123000" data-role="button"></button>
+                                                    <button class="List_Button " id="button_124500" data-pkey="124500" data-role="button"></button>
+                    </p>
+                </div>
+            </div>                       
+            <div class="ui-grid-a-37 ui-grid-span4" style="text-align: left;">
+                <div class="ui-block-a ui-btn-up-c ui-grid-span4">
+                    <p>
+                        <span>13:00</span>
+                    </p>
+                </div>
+                <div class="ui-block-b ui-btn-up-c">
+                    <p>
+                            <button class="List_Button List_Button_Disable" id="button_130000" data-pkey="130000" data-role="button"></button>
+                                                    <button class="List_Button List_Button_Disable" id="button_131500" data-pkey="131500" data-role="button"></button>
+                                                    <button class="List_Button List_Button_Disable" id="button_133000" data-pkey="133000" data-role="button"></button>
+                                                    <button class="List_Button List_Button_Disable" id="button_134500" data-pkey="134500" data-role="button"></button>
+                    </p>
+                </div>
+            </div>                       
+            <div class="ui-grid-a-37 ui-grid-span4" style="text-align: left;">
+                <div class="ui-block-a ui-btn-up-c ui-grid-span4">
+                    <p>
+                        <span>14:00</span>
+                    </p>
+                </div>
+                <div class="ui-block-b ui-btn-up-c">
+                    <p>
+                            <button class="List_Button List_Button_Disable" id="button_140000" data-pkey="140000" data-role="button"></button>
+                                                    <button class="List_Button List_Button_Disable" id="button_141500" data-pkey="141500" data-role="button"></button>
+                                                    <button class="List_Button List_Button_Disable" id="button_143000" data-pkey="143000" data-role="button"></button>
+                                                    <button class="List_Button List_Button_Disable" id="button_144500" data-pkey="144500" data-role="button"></button>
+                    </p>
+                </div>
+            </div>                       
+            <div class="ui-grid-a-37 ui-grid-span4" style="text-align: left;">
+                <div class="ui-block-a ui-btn-up-c ui-grid-span4">
+                    <p>
+                        <span>15:00</span>
+                    </p>
+                </div>
+                <div class="ui-block-b ui-btn-up-c">
+                    <p>
+                            <button class="List_Button List_Button_Disable" id="button_150000" data-pkey="150000" data-role="button"></button>
+                                                    <button class="List_Button List_Button_Disable" id="button_151500" data-pkey="151500" data-role="button"></button>
+                                                    <button class="List_Button List_Button_Disable" id="button_153000" data-pkey="153000" data-role="button"></button>
+                                                    <button class="List_Button List_Button_Disable" id="button_154500" data-pkey="154500" data-role="button"></button>
+                    </p>
+                </div>
+            </div>                       
+            <div class="ui-grid-a-37 ui-grid-span4" style="text-align: left;">
+                <div class="ui-block-a ui-btn-up-c ui-grid-span4">
+                    <p>
+                        <span>16:00</span>
+                    </p>
+                </div>
+                <div class="ui-block-b ui-btn-up-c">
+                    <p>
+                            <button class="List_Button List_Button_Disable" id="button_160000" data-pkey="160000" data-role="button"></button>
+                                                    <button class="List_Button List_Button_Disable" id="button_161500" data-pkey="161500" data-role="button"></button>
+                                                    <button class="List_Button List_Button_Disable" id="button_163000" data-pkey="163000" data-role="button"></button>
+                                                    <button class="List_Button List_Button_Disable" id="button_164500" data-pkey="164500" data-role="button"></button>
+                    </p>
+                </div>
+            </div>                       
+            <div class="ui-grid-a-37 ui-grid-span4" style="text-align: left;">
+                <div class="ui-block-a ui-btn-up-c ui-grid-span4">
+                    <p>
+                        <span>17:00</span>
+                    </p>
+                </div>
+                <div class="ui-block-b ui-btn-up-c">
+                    <p>
+                            <button class="List_Button List_Button_Disable" id="button_170000" data-pkey="170000" data-role="button"></button>
+                                                    <button class="List_Button List_Button_Disable" id="button_171500" data-pkey="171500" data-role="button"></button>
+                                                    <button class="List_Button List_Button_Disable" id="button_173000" data-pkey="173000" data-role="button"></button>
+                                                    <button class="List_Button List_Button_Disable" id="button_174500" data-pkey="174500" data-role="button"></button>
+                    </p>
+                </div>
+            </div>                       
+            <div class="ui-grid-a-37 ui-grid-span4" style="text-align: left;">
+                <div class="ui-block-a ui-btn-up-c ui-grid-span4">
+                    <p>
+                        <span>18:00</span>
+                    </p>
+                </div>
+                <div class="ui-block-b ui-btn-up-c">
+                    <p>
+                            <button class="List_Button List_Button_Disable" id="button_180000" data-pkey="180000" data-role="button"></button>
+                                                    <button class="List_Button List_Button_Disable" id="button_181500" data-pkey="181500" data-role="button"></button>
+                                                    <button class="List_Button List_Button_Disable" id="button_183000" data-pkey="183000" data-role="button"></button>
+                                                    <button class="List_Button List_Button_Disable" id="button_184500" data-pkey="184500" data-role="button"></button>
+                    </p>
+                </div>
+            </div>                       
+            <div class="ui-grid-a-37 ui-grid-span4" style="text-align: left;">
+                <div class="ui-block-a ui-btn-up-c ui-grid-span4">
+                    <p>
+                        <span>19:00</span>
+                    </p>
+                </div>
+                <div class="ui-block-b ui-btn-up-c">
+                    <p>
+                            <button class="List_Button List_Button_Disable" id="button_190000" data-pkey="190000" data-role="button"></button>
+                                                    <button class="List_Button List_Button_Disable" id="button_191500" data-pkey="191500" data-role="button"></button>
+                                                    <button class="List_Button List_Button_Disable" id="button_193000" data-pkey="193000" data-role="button"></button>
+                                                    <button class="List_Button List_Button_Disable" id="button_194500" data-pkey="194500" data-role="button"></button>
+                    </p>
+                </div>
+            </div>                       
+            <div class="ui-grid-a-37 ui-grid-span4" style="text-align: left;">
+                <div class="ui-block-a ui-btn-up-c ui-grid-span4">
+                    <p>
+                        <span>20:00</span>
+                    </p>
+                </div>
+                <div class="ui-block-b ui-btn-up-c">
+                    <p>
+                            <button class="List_Button List_Button_Disable" id="button_200000" data-pkey="200000" data-role="button"></button>
+                                                    <button class="List_Button List_Button_Disable" id="button_201500" data-pkey="201500" data-role="button"></button>
+                                                    <button class="List_Button List_Button_Disable" id="button_203000" data-pkey="203000" data-role="button"></button>
+                                                    <button class="List_Button List_Button_Disable" id="button_204500" data-pkey="204500" data-role="button"></button>
+                    </p>
+                </div>
+            </div>                       
+            <div class="ui-grid-a-37 ui-grid-span4" style="text-align: left;">
+                <div class="ui-block-a ui-btn-up-c ui-grid-span4">
+                    <p>
+                        <span>21:00</span>
+                    </p>
+                </div>
+                <div class="ui-block-b ui-btn-up-c">
+                    <p>
+                            <button class="List_Button List_Button_Disable" id="button_210000" data-pkey="210000" data-role="button"></button>
+                                                    <button class="List_Button List_Button_Disable" id="button_211500" data-pkey="211500" data-role="button"></button>
+                                                    <button class="List_Button List_Button_Disable" id="button_213000" data-pkey="213000" data-role="button"></button>
+                                                    <button class="List_Button List_Button_Disable" id="button_214500" data-pkey="214500" data-role="button"></button>
+                    </p>
+                </div>
+            </div>                       
+            <div class="ui-grid-a-37 ui-grid-span4" style="text-align: left;">
+                <div class="ui-block-a ui-btn-up-c ui-grid-span4">
+                    <p>
+                        <span>22:00</span>
+                    </p>
+                </div>
+                <div class="ui-block-b ui-btn-up-c">
+                    <p>
+                            <button class="List_Button List_Button_Disable" id="button_220000" data-pkey="220000" data-role="button"></button>
+                                                    <button class="List_Button List_Button_Disable" id="button_221500" data-pkey="221500" data-role="button"></button>
+                                                    <button class="List_Button List_Button_Disable" id="button_223000" data-pkey="223000" data-role="button"></button>
+                                                    <button class="List_Button List_Button_Disable" id="button_224500" data-pkey="224500" data-role="button"></button>
+                    </p>
+                </div>
+            </div>                       
+    </div>
+    <ul class="btn_holder">
+        <li class="d1"><button type="button" class="btn_cancel" id="backsubmit" name="backsubmit" >戻る</button></li>
+    </ul>    
+    <input type="hidden" name="hourCd" id="hourCd" value="" />
+    <input type="hidden" name="ExecuteType" id="ExecuteType" value="Next" />    
+</form>
+        </div>
+        <div data-role="footer" data-thema="b">
+ <!-- *no ContentFooter* --><br />         </div>
+    </div>
+        <!-- *no append AppendFooter* -->
+</body>
+</html>
+
